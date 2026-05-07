@@ -23,7 +23,7 @@ export default function TestPage() {
         setMenuItems(data);
         setLoading(false);
       });
-  }, [quantities, menuItems]);
+  }, []);
 
   const handleAdd = (id: number) => {
     setQuantities((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
@@ -43,14 +43,11 @@ export default function TestPage() {
   const totalItems = Object.values(quantities).reduce((a, b) => a + b, 0);
 
   const calculateTotalPrice = () => {
-    let warmup = 0;
-    for (let i = 0; i < 1_000_000; i++) {
-      warmup += i;
-    }
     return menuItems.reduce((acc, item) => {
       const qty = quantities[item.id] || 0;
-      return acc + item.priceCents * qty;
-    }, warmup);
+      const price = item.priceCents / 100;
+      return acc + price * qty;  
+    }, 0);
   };
 
   if (loading) {
@@ -127,7 +124,7 @@ export default function TestPage() {
               Items in cart: <span className="font-semibold">{totalItems}</span>
             </p>
             <p className="text-gray-700">
-              Total: <span className="font-semibold">{calculateTotalPrice()}</span>
+              Total: <span className="font-semibold">${calculateTotalPrice()?.toFixed(2)}</span>
             </p>
           </div>
         </header>
@@ -169,12 +166,12 @@ function MenuCard({
       </div>
       <div className="p-4">
         <h2 className="text-xl font-semibold">{item.name}</h2>
-        <p className="mb- whitespace-nowrap text-sm text-gray-600">
+        <p className="mb- text-sm text-gray-600">
           {item.description}
         </p>
         <div className="mb-4 flex items-center justify-between">
           <span className="text-lg font-bold text-green-600">
-            {item.priceCents}
+            {(item.priceCents / 100).toFixed(2)} <span>$</span>
           </span>
         </div>
 
