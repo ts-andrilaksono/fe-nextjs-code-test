@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 
 interface MenuItem {
@@ -23,13 +23,9 @@ export default function TestPage() {
         setMenuItems(data);
         setLoading(false);
       });
-  }, [quantities, menuItems]);
+  }, []);
 
   const handleAdd = (id: number) => {
-    setQuantities((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
-  };
-
-  const handleIncrease = (id: number) => {
     setQuantities((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
   };
 
@@ -40,18 +36,21 @@ export default function TestPage() {
     }));
   };
 
-  const totalItems = Object.values(quantities).reduce((a, b) => a + b, 0);
+  const totalItems = useMemo(
+    () => Object.values(quantities).reduce((a, b) => a + b, 0),
+    [quantities],
+  );
 
-  const calculateTotalPrice = () => {
+  const calculateTotalPrice = useCallback(() => {
     let warmup = 0;
-    for (let i = 0; i < 1_000_000; i++) {
-      warmup += i;
-    }
+    // for (let i = 0; i < 1_000_000; i++) {
+    //   warmup += i;
+    // }
     return menuItems.reduce((acc, item) => {
       const qty = quantities[item.id] || 0;
       return acc + item.priceCents * qty;
     }, warmup);
-  };
+  }, [menuItems, quantities]);
 
   if (loading) {
     return (
@@ -90,11 +89,12 @@ export default function TestPage() {
                     Open the <strong>Network tab</strong> — whats going on here?
                   </li>
                   <li>
-                    There are some unecessary function which doing the same thing.
+                    There are some unecessary function which doing the same
+                    thing.
                   </li>
                   <li>
-                    Take a look at the <strong>browser console</strong> — Next.js
-                    might be telling you something.
+                    Take a look at the <strong>browser console</strong> —
+                    Next.js might be telling you something.
                   </li>
                 </ul>
               </div>
@@ -114,8 +114,8 @@ export default function TestPage() {
                   Level 3 — Product polish
                 </p>
                 <p className="mt-1 text-amber-900">
-                  Pretend you're a real diner using this app. What would make
-                  it feel like a finished product instead of a prototype? You
+                  Pretend you're a real diner using this app. What would make it
+                  feel like a finished product instead of a prototype? You
                   decide what's worth fixing or adding/improving — surprise us.
                 </p>
               </div>
@@ -127,7 +127,10 @@ export default function TestPage() {
               Items in cart: <span className="font-semibold">{totalItems}</span>
             </p>
             <p className="text-gray-700">
-              Total: <span className="font-semibold">{calculateTotalPrice()}</span>
+              Total:{" "}
+              <span className="font-semibold">
+                $ {(calculateTotalPrice() / 100).toFixed(2)}
+              </span>
             </p>
           </div>
         </header>
@@ -139,7 +142,7 @@ export default function TestPage() {
               item={item}
               quantity={quantities[item.id] || 0}
               onAdd={handleAdd}
-              onIncrease={handleIncrease}
+              onIncrease={handleAdd}
               onDecrease={handleDecrease}
             />
           ))}
@@ -165,43 +168,49 @@ function MenuCard({
   return (
     <div className="overflow-hidden rounded-lg bg-white shadow-md">
       <div className="relative h-48 bg-gray-200">
-        <Image src={item.image} alt={item.name} fill />
+        <Image
+          src={item.image}
+          alt={item.name}
+          fill
+          sizes="(max-width: 720px, 100vw)"
+          loading="eager"
+        />
       </div>
       <div className="p-4">
         <h2 className="text-xl font-semibold">{item.name}</h2>
-        <p className="mb- whitespace-nowrap text-sm text-gray-600">
-          {item.description}
-        </p>
-        <div className="mb-4 flex items-center justify-between">
-          <span className="text-lg font-bold text-green-600">
-            {item.priceCents}
-          </span>
-        </div>
-
-        {quantity === 0 ? (
-          <button
-            onClick={() => onAdd(item.id)}
-            className="rounded bg-blue-500 px-4 py-2 text-white transition hover:bg-blue-600"
-          >
-            Add
-          </button>
-        ) : (
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => onDecrease(item.id)}
-              className="flex h-10 w-10 items-center justify-center rounded bg-red-500 text-white transition hover:bg-red-600"
-            >
-              -
-            </button>
-            <span className="text-lg font-semibold">{quantity}</span>
-            <button
-              onClick={() => onIncrease(item.id)}
-              className="flex h-10 w-10 items-center justify-center rounded bg-green-500 text-white transition hover:bg-green-600"
-            >
-              +
-            </button>
+        <p className="mb-4 text-sm text-gray-600">{item.description}</p>
+        <div className=" flex items-center justify-between">
+          <div className=" flex items-center justify-between">
+            <span className="text-lg font-bold text-green-600">
+              $ {(item.priceCents / 100).toFixed(2)}
+            </span>
           </div>
-        )}
+
+          {quantity === 0 ? (
+            <button
+              onClick={() => onAdd(item.id)}
+              className="rounded bg-blue-500 px-4 py-2 text-white transition hover:bg-blue-600"
+            >
+              Add
+            </button>
+          ) : (
+            <div className="flex items-center justify-between gap-4">
+              <button
+                onClick={() => onDecrease(item.id)}
+                className="flex h-10 w-10 items-center justify-center rounded bg-red-500 text-white transition hover:bg-red-600"
+              >
+                -
+              </button>
+              <span className="text-lg font-semibold min-w-[2rem] text-center">{quantity}</span>
+              <button
+                onClick={() => onIncrease(item.id)}
+                className="flex h-10 w-10 items-center justify-center rounded bg-green-500 text-white transition hover:bg-green-600"
+              >
+                +
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
