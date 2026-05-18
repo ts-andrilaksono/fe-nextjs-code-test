@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState ,useCallback,useMemo} from "react";
 import Image from "next/image";
 
 interface MenuItem {
@@ -23,35 +23,39 @@ export default function TestPage() {
         setMenuItems(data);
         setLoading(false);
       });
-  }, [quantities, menuItems]);
+  }, [quantities]);
 
-  const handleAdd = (id: number) => {
+  const handleAdd =   useCallback((id: number) => {
     setQuantities((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
-  };
+  },[quantities]);
 
-  const handleIncrease = (id: number) => {
+  const handleIncrease = useCallback((id: number) => {
     setQuantities((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
-  };
+  },[quantities]);
 
-  const handleDecrease = (id: number) => {
+  const handleDecrease = useCallback((id: number) => {
     setQuantities((prev) => ({
       ...prev,
       [id]: Math.max(0, (prev[id] || 0) - 1),
     }));
-  };
+  },[quantities]);
 
-  const totalItems = Object.values(quantities).reduce((a, b) => a + b, 0);
+  const currency="$"
 
-  const calculateTotalPrice = () => {
+  const totalItems = useMemo(() => Object.values(quantities).reduce((a, b) => a + b, 0), [quantities]);
+
+  const calculateTotalPrice = useCallback(() => {
     let warmup = 0;
-    for (let i = 0; i < 1_000_000; i++) {
+    for (let i = 0; i < totalItems; i++) {
       warmup += i;
     }
-    return menuItems.reduce((acc, item) => {
+    const finalValue=menuItems.reduce((acc, item) => {
       const qty = quantities[item.id] || 0;
       return acc + item.priceCents * qty;
     }, warmup);
-  };
+
+    return  (finalValue/100).toFixed(2)
+  },[quantities])
 
   if (loading) {
     return (
@@ -127,7 +131,7 @@ export default function TestPage() {
               Items in cart: <span className="font-semibold">{totalItems}</span>
             </p>
             <p className="text-gray-700">
-              Total: <span className="font-semibold">{calculateTotalPrice()}</span>
+              Total: <span className="font-semibold">{currency}{calculateTotalPrice()}</span>
             </p>
           </div>
         </header>
@@ -141,6 +145,7 @@ export default function TestPage() {
               onAdd={handleAdd}
               onIncrease={handleIncrease}
               onDecrease={handleDecrease}
+              currency={currency}
             />
           ))}
         </div>
@@ -155,28 +160,30 @@ function MenuCard({
   onAdd,
   onIncrease,
   onDecrease,
+  currency,
 }: {
   item: MenuItem;
   quantity: number;
   onAdd: (id: number) => void;
   onIncrease: (id: number) => void;
   onDecrease: (id: number) => void;
+  currency:string
 }) {
   return (
     <div className="overflow-hidden rounded-lg bg-white shadow-md">
       <div className="relative h-48 bg-gray-200">
-        <Image src={item.image} alt={item.name} fill />
+        <Image src={item.image} alt={item.name} fill   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" loading="eager" />
       </div>
       <div className="p-4">
         <h2 className="text-xl font-semibold">{item.name}</h2>
-        <p className="mb- whitespace-nowrap text-sm text-gray-600">
+        <p className="mb-2 text-sm text-gray-600">
           {item.description}
         </p>
         <div className="mb-4 flex items-center justify-between">
           <span className="text-lg font-bold text-green-600">
-            {item.priceCents}
+           {currency}{(item.priceCents/100).toFixed(2)}
           </span>
-        </div>
+       
 
         {quantity === 0 ? (
           <button
@@ -186,7 +193,7 @@ function MenuCard({
             Add
           </button>
         ) : (
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-5">
             <button
               onClick={() => onDecrease(item.id)}
               className="flex h-10 w-10 items-center justify-center rounded bg-red-500 text-white transition hover:bg-red-600"
@@ -202,6 +209,7 @@ function MenuCard({
             </button>
           </div>
         )}
+        </div>
       </div>
     </div>
   );
