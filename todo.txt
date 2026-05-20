@@ -1,0 +1,1 @@
+in test/page i have to change the image stretch

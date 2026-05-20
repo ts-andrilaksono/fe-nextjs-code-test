@@ -1,65 +1,79 @@
-"use client";
+import { MenuItem } from "../api/menu/route";
+import { MenuCard } from "./_components/MenuCard";
 
-import { useEffect, useState } from "react";
-import Image from "next/image";
 
-interface MenuItem {
-  id: number;
-  name: string;
-  description: string;
-  priceCents: number;
-  image: string;
+
+async function fetchMenuItems(){
+  let data, error;
+  try{
+    const res = await fetch("http://localhost:3010/api/menu", {
+      next: {
+        revalidate: 60
+      }
+    })
+    data = await res.json()
+  } catch(err: Error){
+    // sent this to insights
+    console.log(err);
+    error = "Something went wrong!"
+  } finally{
+    return {data, error}
+  }
 }
 
-export default function TestPage() {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [quantities, setQuantities] = useState<Record<number, number>>({});
-  const [loading, setLoading] = useState(true);
+export   default async function TestPage() {
+  // const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  // const [quantities, setQuantities] = useState<Record<number, number>>({});
+  // const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetch("/api/menu")
-      .then((res) => res.json())
-      .then((data) => {
-        setMenuItems(data);
-        setLoading(false);
-      });
-  }, [quantities, menuItems]);
+  const { data, error} = await fetchMenuItems()
 
-  const handleAdd = (id: number) => {
-    setQuantities((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
-  };
+  console.log(data);
+  
+  // useEffect(() => {
+  //   fetch("/api/menu")
+  //     .then((res) => res.json())
+  //     .then((data) => {
+  //       setMenuItems(data);
+  //       setLoading(false);
+  //     });
+  // }, [quantities]);
 
-  const handleIncrease = (id: number) => {
-    setQuantities((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
-  };
+  // const handleAdd = (id: number) => {
+  //   setQuantities((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
+  // };
 
-  const handleDecrease = (id: number) => {
-    setQuantities((prev) => ({
-      ...prev,
-      [id]: Math.max(0, (prev[id] || 0) - 1),
-    }));
-  };
+  // const handleIncrease = (id: number) => {
+  //   setQuantities((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
+  // };
 
-  const totalItems = Object.values(quantities).reduce((a, b) => a + b, 0);
+  // const handleDecrease = (id: number) => {
+  //   setQuantities((prev) => ({
+  //     ...prev,
+  //     [id]: Math.max(0, (prev[id] || 0) - 1),
+  //   }));
+  // };
 
-  const calculateTotalPrice = () => {
-    let warmup = 0;
-    for (let i = 0; i < 1_000_000; i++) {
-      warmup += i;
-    }
-    return menuItems.reduce((acc, item) => {
-      const qty = quantities[item.id] || 0;
-      return acc + item.priceCents * qty;
-    }, warmup);
-  };
+  // const totalItems = Object.values(quantities).reduce((a, b) => a + b, 0);
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-xl">Loading...</p>
-      </div>
-    );
-  }
+  // const calculateTotalPrice = () => {
+  //   let warmup = 0;
+  //   for (let i = 0; i < 1_000_000; i++) {
+  //     warmup += i;
+  //   }
+  //   return menuItems.reduce((acc, item) => {
+  //     const qty = quantities[item.id] || 0;
+  //     return acc + item.priceCents * qty;
+  //   }, warmup);
+  // };
+
+  // if (loading) {
+  //   return (
+  //     <div className="flex min-h-screen items-center justify-center">
+  //       <p className="text-xl">Loading...</p>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="min-h-screen bg-gray-100 px-4 py-8">
@@ -122,86 +136,28 @@ export default function TestPage() {
             </div>
           </section>
 
-          <div className="flex gap-6 text-sm">
+          {/* <div className="flex gap-6 text-sm">
             <p className="text-gray-700">
               Items in cart: <span className="font-semibold">{totalItems}</span>
             </p>
             <p className="text-gray-700">
               Total: <span className="font-semibold">{calculateTotalPrice()}</span>
             </p>
-          </div>
+          </div> */}
         </header>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {menuItems.map((item) => (
+          {data.map((item: MenuItem) => (
             <MenuCard
               key={item.id}
               item={item}
-              quantity={quantities[item.id] || 0}
-              onAdd={handleAdd}
-              onIncrease={handleIncrease}
-              onDecrease={handleDecrease}
+              // quantity={quantities[item.id] || 0}
+              // onAdd={handleAdd}
+              // onIncrease={handleIncrease}
+              // onDecrease={handleDecrease}
             />
           ))}
         </div>
-      </div>
-    </div>
-  );
-}
-
-function MenuCard({
-  item,
-  quantity,
-  onAdd,
-  onIncrease,
-  onDecrease,
-}: {
-  item: MenuItem;
-  quantity: number;
-  onAdd: (id: number) => void;
-  onIncrease: (id: number) => void;
-  onDecrease: (id: number) => void;
-}) {
-  return (
-    <div className="overflow-hidden rounded-lg bg-white shadow-md">
-      <div className="relative h-48 bg-gray-200">
-        <Image src={item.image} alt={item.name} fill />
-      </div>
-      <div className="p-4">
-        <h2 className="text-xl font-semibold">{item.name}</h2>
-        <p className="mb- whitespace-nowrap text-sm text-gray-600">
-          {item.description}
-        </p>
-        <div className="mb-4 flex items-center justify-between">
-          <span className="text-lg font-bold text-green-600">
-            {item.priceCents}
-          </span>
-        </div>
-
-        {quantity === 0 ? (
-          <button
-            onClick={() => onAdd(item.id)}
-            className="rounded bg-blue-500 px-4 py-2 text-white transition hover:bg-blue-600"
-          >
-            Add
-          </button>
-        ) : (
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => onDecrease(item.id)}
-              className="flex h-10 w-10 items-center justify-center rounded bg-red-500 text-white transition hover:bg-red-600"
-            >
-              -
-            </button>
-            <span className="text-lg font-semibold">{quantity}</span>
-            <button
-              onClick={() => onIncrease(item.id)}
-              className="flex h-10 w-10 items-center justify-center rounded bg-green-500 text-white transition hover:bg-green-600"
-            >
-              +
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

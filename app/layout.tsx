@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import ReduxProvider from "./ReduxProvider";
 
 export const metadata: Metadata = {
   title: "FE Assignment",
@@ -11,7 +12,9 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <ReduxProvider>{children}</ReduxProvider>
+      </body>
     </html>
   );
 }
