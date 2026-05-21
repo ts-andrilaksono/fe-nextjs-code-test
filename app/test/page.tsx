@@ -11,6 +11,10 @@ interface MenuItem {
   image: string;
 }
 
+const fromCentsToDollars = (cents: number) => {
+  return (cents / 100).toFixed(2);
+};
+
 export default function TestPage() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [quantities, setQuantities] = useState<Record<number, number>>({});
@@ -20,10 +24,15 @@ export default function TestPage() {
     fetch("/api/menu")
       .then((res) => res.json())
       .then((data) => {
-        setMenuItems(data);
+        setMenuItems(
+          data.map((item: any) => ({
+            ...item,
+            priceCents: fromCentsToDollars(item.priceCents),
+          })),
+        );
         setLoading(false);
       });
-  }, [quantities, menuItems]);
+  }, [quantities]);
 
   const handleAdd = (id: number) => {
     setQuantities((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
@@ -44,9 +53,9 @@ export default function TestPage() {
 
   const calculateTotalPrice = () => {
     let warmup = 0;
-    for (let i = 0; i < 1_000_000; i++) {
-      warmup += i;
-    }
+    // for (let i = 0; i < 1_000_000; i++) {
+    //   warmup += i;
+    // }
     return menuItems.reduce((acc, item) => {
       const qty = quantities[item.id] || 0;
       return acc + item.priceCents * qty;
@@ -90,11 +99,12 @@ export default function TestPage() {
                     Open the <strong>Network tab</strong> — whats going on here?
                   </li>
                   <li>
-                    There are some unecessary function which doing the same thing.
+                    There are some unecessary function which doing the same
+                    thing.
                   </li>
                   <li>
-                    Take a look at the <strong>browser console</strong> — Next.js
-                    might be telling you something.
+                    Take a look at the <strong>browser console</strong> —
+                    Next.js might be telling you something.
                   </li>
                 </ul>
               </div>
@@ -114,8 +124,8 @@ export default function TestPage() {
                   Level 3 — Product polish
                 </p>
                 <p className="mt-1 text-amber-900">
-                  Pretend you're a real diner using this app. What would make
-                  it feel like a finished product instead of a prototype? You
+                  Pretend you're a real diner using this app. What would make it
+                  feel like a finished product instead of a prototype? You
                   decide what's worth fixing or adding/improving — surprise us.
                 </p>
               </div>
@@ -127,7 +137,10 @@ export default function TestPage() {
               Items in cart: <span className="font-semibold">{totalItems}</span>
             </p>
             <p className="text-gray-700">
-              Total: <span className="font-semibold">{calculateTotalPrice()}</span>
+              Total:{" "}
+              <span className="font-semibold">
+                ${calculateTotalPrice().toFixed(2)}
+              </span>
             </p>
           </div>
         </header>
@@ -164,36 +177,39 @@ function MenuCard({
 }) {
   return (
     <div className="overflow-hidden rounded-lg bg-white shadow-md">
-      <div className="relative h-48 bg-gray-200">
-        <Image src={item.image} alt={item.name} fill />
+      <div className="relative h-80 bg-gray-200">
+        <Image className="object-cover" src={item.image} alt={item.name} fill />
       </div>
       <div className="p-4">
         <h2 className="text-xl font-semibold">{item.name}</h2>
-        <p className="mb- whitespace-nowrap text-sm text-gray-600">
-          {item.description}
-        </p>
+        <p className="mb-2 text-sm text-gray-600">{item.description}</p>
         <div className="mb-4 flex items-center justify-between">
           <span className="text-lg font-bold text-green-600">
-            {item.priceCents}
+            ${item.priceCents}
           </span>
         </div>
 
-        {quantity === 0 ? (
+        {/*<div className="flex justify-between">*/}
+        {quantity === 0 && (
           <button
             onClick={() => onAdd(item.id)}
-            className="rounded bg-blue-500 px-4 py-2 text-white transition hover:bg-blue-600"
+            disabled={quantity > 0}
+            className="rounded bg-blue-500 px-4 py-2 disabled:bg-slate-500/60 text-white transition hover:bg-blue-600"
           >
             Add
           </button>
-        ) : (
-          <div className="flex items-center justify-between">
+        )}
+        {quantity > 0 && (
+          <div className="w-30 flex items-center justify-end gap-5">
             <button
               onClick={() => onDecrease(item.id)}
               className="flex h-10 w-10 items-center justify-center rounded bg-red-500 text-white transition hover:bg-red-600"
             >
               -
             </button>
-            <span className="text-lg font-semibold">{quantity}</span>
+            <span className="text-lg font-semibold min-w-11 text-center">
+              {quantity}
+            </span>
             <button
               onClick={() => onIncrease(item.id)}
               className="flex h-10 w-10 items-center justify-center rounded bg-green-500 text-white transition hover:bg-green-600"
@@ -202,6 +218,7 @@ function MenuCard({
             </button>
           </div>
         )}
+        {/*</div>*/}
       </div>
     </div>
   );
